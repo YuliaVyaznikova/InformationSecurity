@@ -1,0 +1,31 @@
+== События создания и удаления базы данных ==
+2026-11-11 10:58:47.335+0000 INFO  [neo4j]: CREATE DATABASE n64auditprobe WAIT
+2026-11-11 10:58:48.631+0000 INFO  [neo4j]: DROP DATABASE n64auditprobe RESTRICT DESTROY DATA WAIT
+2026-11-11 11:00:04.696+0000 INFO  [neo4j]: CREATE DATABASE n64auditprobe WAIT
+2026-11-11 11:00:05.283+0000 INFO  [neo4j]: DROP DATABASE n64auditprobe RESTRICT DESTROY DATA WAIT
+
+== Примеры записей security.log ==
+2026-11-11 10:58:47.335+0000 INFO  [neo4j]: CREATE DATABASE n64auditprobe WAIT
+2026-11-11 10:58:48.631+0000 INFO  [neo4j]: DROP DATABASE n64auditprobe RESTRICT DESTROY DATA WAIT
+2026-11-11 11:00:04.159+0000 INFO  [neo4j]: logged in
+2026-11-11 11:00:04.696+0000 INFO  [neo4j]: CREATE DATABASE n64auditprobe WAIT
+2026-11-11 11:00:05.283+0000 INFO  [neo4j]: DROP DATABASE n64auditprobe RESTRICT DESTROY DATA WAIT
+
+== Примеры записей query.log с идентификаторами запросов ==
+2026-11-11 11:00:04.173+0000 INFO  Query started: id:1100 - transaction id:3281 - 1 ms: (planning: 1, waiting: 0) - 0 B - 0 page hits, 0 page faults - bolt-session	bolt	neo4j-python/6.1.0 Python/3.14.3-final-0 (win32)		client/172.20.0.1:40182	server/172.20.0.2:7687>	system - neo4j - CREATE DATABASE n64auditprobe WAIT - runtime=null - {}
+2026-11-11 11:00:04.702+0000 INFO  id:1100 - transaction id:3282 - 529 ms: (planning: 2, waiting: 0) - -1 B - 107 page hits, 0 page faults - bolt-session	bolt	neo4j-python/6.1.0 Python/3.14.3-final-0 (win32)		client/172.20.0.1:40182	server/172.20.0.2:7687>	system - neo4j - CREATE DATABASE n64auditprobe WAIT - runtime=system - {}
+2026-11-11 11:00:04.736+0000 INFO  Query started: id:1101 - transaction id:3293 - 1 ms: (planning: 1, waiting: 0) - 0 B - 0 page hits, 0 page faults - bolt-session	bolt	neo4j-python/6.1.0 Python/3.14.3-final-0 (win32)		client/172.20.0.1:40182	server/172.20.0.2:7687>	system - neo4j - DROP DATABASE n64auditprobe WAIT - runtime=null - {}
+2026-11-11 11:00:05.286+0000 INFO  id:1101 - transaction id:3296 - 551 ms: (planning: 3, waiting: 0) - -1 B - 55 page hits, 0 page faults - bolt-session	bolt	neo4j-python/6.1.0 Python/3.14.3-final-0 (win32)		client/172.20.0.1:40182	server/172.20.0.2:7687>	system - neo4j - DROP DATABASE n64auditprobe WAIT - runtime=system - {}
+
+== Сообщения о запуске Neo4j ==
+2026-11-11 09:36:10.198+0000 INFO  Starting...
+2026-11-11 09:36:19.036+0000 INFO  Started.
+
+== Изменение конфигурации журнала ==
+
+
+== Ротация журналов ==
+-rw-r--r-- 1 neo4j neo4j 696K Nov 11 11:00 /logs/query.log
+-rw-r--r-- 1 neo4j neo4j 8.8K Nov 11 11:00 /logs/security.log
+
+Вывод: security.log содержит дату, время и текст события; уникальный идентификатор есть у записей query.log, но не у каждой записи security.log. Запуск и изменение конфигурации видны в системных/диагностических журналах, а не в едином журнале безопасности.

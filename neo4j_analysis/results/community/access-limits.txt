@@ -1,0 +1,12 @@
+--- GRANT ROLE in Community ---
+Unsupported administration command: GRANT ROLE reader TO analyst
+exit=1
+--- Write as ordinary Community user ---
+result
+"write succeeded"
+exit=0
+--- Administration as ordinary Community user ---
+user, roles, passwordChangeRequired, suspended, home
+"analyst", NULL, FALSE, NULL, NULL
+"neo4j", NULL, FALSE, NULL, NULL
+exit=0

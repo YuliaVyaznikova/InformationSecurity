@@ -1,0 +1,4 @@
+T1: lock acquired; holding transaction for 3 seconds
+T1: committed
+T2: committed after 3.059 seconds
+Final value: 2

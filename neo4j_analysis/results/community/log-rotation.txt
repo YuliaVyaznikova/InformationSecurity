@@ -1,0 +1,2 @@
+-rw-r--r-- 1 neo4j neo4j  91K Nov  4 09:33 /logs/debug.log
+-rw-r--r-- 1 neo4j neo4j 714K Nov  4 09:30 /logs/debug.log.01

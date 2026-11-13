@@ -1,0 +1,2 @@
+name, versions, edition
+"Neo4j Kernel", ["5.26.32"], "community"

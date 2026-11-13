@@ -1,0 +1,130 @@
+Проверка стенда Neo4j по требованиям ФСТЭК России N 64, 11.11.2026 18:00:17
+Neo4j 5.26.33 enterprise
+
+== Раздел 8 N 64: идентификация и аутентификация ==
+[ВЫПОЛНЕНО] Раздел 8: доступ без аутентификации
+  Bolt без пароля: Neo.ClientError.Security.Unauthorized
+  HTTP API без пароля: HTTP 401
+  До входа доступна только служебная страница '/': HTTP 200, версия 5.26.33 enterprise
+[ВЫПОЛНЕНО] Раздел 8: неверный пароль
+  Neo.ClientError.Security.Unauthorized: The client is unauthorized due to authentication failure.
+[ВЫПОЛНЕНО] Раздел 8: минимальная длина пароля 10 символов
+  Пароль из 9 символов: A password must be at least 10 characters.
+  Пароль из 10 символов: принят (сложность не проверяется)
+[ВЫПОЛНЕНО] Раздел 8: блокировка после 3 неудачных попыток на 15 с
+  3 неверные попытки: Unauthorized, Unauthorized, Unauthorized
+  Верный пароль сразу: The client has provided incorrect authentication details too many times in a row.
+  Верный пароль через 16 с: вход выполнен
+[ВЫПОЛНЕНО] Раздел 8: обязательная смена начального пароля
+  До смены пароля: Neo.ClientError.Security.CredentialsExpired
+  Тот же пароль повторно: Old password and new password cannot be the same.
+  После смены пароля видно узлов: 11
+[ВЫПОЛНЕНО] Раздел 8: отказ в открытии сеанса приостановленной учётной записи
+  SUSPENDED: Neo.ClientError.Security.Unauthorized
+  ACTIVE: вход выполнен
+[ВЫПОЛНЕНО] Раздел 8: атрибуты безопасности пользователя
+  {'user': 'analyst', 'roles': ['analysts', 'PUBLIC'], 'passwordChangeRequired': False, 'suspended': False}
+[ВЫПОЛНЕНО] Раздел 8: связь пользователя с сеансом
+  SHOW CURRENT USER: {'user': 'analyst', 'roles': ['analysts', 'PUBLIC']}
+
+== Раздел 7 N 64: управление доступом и роли ==
+[ВЫПОЛНЕНО] Раздел 7: analyst не видит паспорт и VIP-счёт
+  admin видит паспортов: 4, analyst: 0
+  admin видит счетов: 4, analyst: 3 (VIP-счёт A-004 скрыт правилом по значению свойства)
+[ВЫПОЛНЕНО] Раздел 7: support видит только клиентов и меняет только телефон
+  Видит счетов: 0
+  SET phone: разрешено
+  SET name: Set property for property 'name' on database 'neo4j' is not allowed for user 'support' with roles [PUBLIC, support_team].
+[ВЫПОЛНЕНО] Раздел 7: operator создаёт переводы, но не меняет баланс и не удаляет
+  CREATE Transaction: разрешено
+  SET balance: Set property for property 'balance' on database 'neo4j' is not allowed for user 'operator' with roles [PUBLIC, operators].
+  DELETE: Delete relationship with type 'SENT' on database 'neo4j' is not allowed for user 'operator' with roles [PUBLIC, operators].
+[ВЫПОЛНЕНО] Раздел 7: новый пользователь без ролей не видит данные
+  Новый пользователь без ролей видит узлов: 0
+[ВЫПОЛНЕНО] Раздел 7: auditor видит учётные записи, но не данные и не меняет их
+  MATCH в neo4j: ACCESS on database 'neo4j' is not allowed for user 'auditor' with roles [PUBLIC, auditors].
+  SHOW USERS: 11 записей
+  CREATE USER: запрещено
+[ВЫПОЛНЕНО] Раздел 7: usermgr создаёт учётные записи, но не раздаёт роли
+  CREATE USER: разрешено
+  GRANT ROLE admin TO usermgr: Permission has not been granted for ASSIGN ROLE.
+[ВЫПОЛНЕНО] Раздел 7: те же правила через HTTPS API
+  HTTP 200: passport = None, счетов = 3
+
+== Раздел 15 N 64: сетевые ограничения и программная среда ==
+[ВЫПОЛНЕНО] Раздел 15: фильтрация исходящих запросов по адресу
+  operator -> 10.0.0.1: доступ к /10.0.0.1 заблокирован через internal.dbms.cypher_ip_blocklist
+  analyst -> любой адрес: LOAD on URL 'http://127.0.0.1:1/x.csv' is denied for user 'analyst' with roles [PUBLIC, analysts].
+[ВЫПОЛНЕНО] Раздел 15: только защищённые каналы
+  Bolt без TLS: ServiceUnavailable
+  HTTP 7474: URLError
+[ВЫПОЛНЕНО] Раздел 15: белый список процедур и запрет административных процедур
+  apoc.text.capitalize: Защита
+  apoc.load.json: процедура не зарегистрирована
+  analyst вызывает dbms.setConfigValue: разрешение не выдано
+
+== Раздел 10 N 64: регистрация событий безопасности ==
+[ВЫПОЛНЕНО] Раздел 10: события в security.log
+  Успешный вход: есть
+  Неуспешный вход: есть
+  Блокировка: есть
+  Создание пользователя (пароль скрыт): есть
+  Смена начального пароля: есть
+  Приостановка: есть
+  Отказ в доступе: есть
+[ВЫПОЛНЕНО] Раздел 10: избирательный журнал по пользователю
+  query.log: пользователи ['analyst', 'auditor', 'neo4j', 'operator', 'support', 'tmp_new', 'tmp_public', 'usermgr']
+  analyst-audit.log: ['analyst']
+[ВЫПОЛНЕНО] Раздел 10: администратор отключает и включает журнал запросов
+  Запрос при выключенном журнале записан: нет
+  Запрос после включения записан: да
+  2026-11-11 11:01:27.450+0000 INFO [o.n.c.Config] db.logs.query.enabled changed to OFF, by dbms.setConfigValue
+  2026-11-11 11:01:27.483+0000 INFO [o.n.c.Config] db.logs.query.enabled changed to VERBOSE, by dbms.setConfigValue
+[ВЫПОЛНЕНО] Раздел 10: пользователь СУБД не читает журналы аудита
+  LOAD CSV security.log от analyst: Cannot load from URL 'file:///../logs/security.log': Couldn't load the external resource
+  -rw-r--r-- 1 neo4j neo4j 750643 Nov 11 11:01 query.log
+  -rw-r--r-- 1 neo4j neo4j 13754 Nov 11 11:01 security.log
+[ВЫПОЛНЕНО] Раздел 10: метки времени в журналах
+  Последняя запись security.log: 2026-11-11 11:01:26.837+0000
+  datetime() сервера: 2026-11-11T11:01:29.208Z
+
+== Раздел 8 N 64: защита хранимой аутентификационной информации ==
+[ВЫПОЛНЕНО] Раздел 8: пароли не хранятся и не показываются в открытом виде
+  SHOW USERS WITH AUTH: {'password': '***', 'changeRequired': False}
+  Файлов с паролем analyst в открытом виде: 0
+  Формат хранения: SHA-256,c9dd3147...
+
+== Раздел 14 N 64: транзакции, ресурсы и сеансы ==
+[ВЫПОЛНЕНО] Раздел 14: изоляция транзакций
+  Чужая незафиксированная запись видна: 0; после COMMIT: 1
+[ВЫПОЛНЕНО] Раздел 14: вторая запись ждёт освобождения блокировки
+  Ожидание второй транзакции: 3.01 с
+[ВЫПОЛНЕНО] Раздел 14: обнаружение взаимоблокировки
+  Neo.TransientError.Transaction.DeadlockDetected, COMMIT
+[ВЫПОЛНЕНО] Раздел 14: лимит памяти транзакции 64 МБ
+  The allocation of an extra 11.6 MiB would use more than the limit 64.0 MiB. Currently using 54.6 MiB. db.memory.transaction.max
+[ВЫПОЛНЕНО] Раздел 14: администратор видит и прерывает чужой запрос
+  SHOW TRANSACTIONS: ['neo4j-transaction-1097']; у analyst: Neo.ClientError.Transaction.Terminated
+[НЕТ] Раздел 14: ограничение числа параллельных сеансов
+  Одновременно открыто соединений analyst: 11, ограничения нет
+[ВЫПОЛНЕНО] Раздел 14: таймаут бездействия сеанса Neo4j Browser
+  browser.credential_timeout = 2m
+  browser.retain_connection_credentials = false
+  Таймаут также проверен в Browser вручную (отчёт, рисунок 8)
+
+== Разделы 11 и 13 N 64: резервное копирование, восстановление и очистка памяти ==
+[ВЫПОЛНЕНО] Раздел 11: онлайн-копия и восстановление в отдельную базу
+  backup: Backup command completed. -> neo4j-2026-11-11T11-02-13.backup
+  В восстановленной копии bankcopy счетов: 4
+[ВЫПОЛНЕНО] Раздел 11: атрибуты безопасности переносятся вместе с копией
+  analyst в bankcopy до restore_metadata.cypher: доступ запрещён
+  после restore_metadata.cypher: видит 3 счёта (VIP снова скрыт)
+[НЕТ] Раздел 13: гарантированное стирание удалённых данных
+  Удалённое значение после DELETE и checkpoint найдено в файлах:
+  /data/databases/neo4j/block.big_values.db
+  /data/transactions/neo4j/neostore.transaction.db.0
+[ВЫПОЛНЕНО] Раздел 8: однозначная идентификация объектов
+  Дубликат P-001: Node(0) already exists with label `Person` and property `id` = 'P-001'
+  elementId: 4:24aae294-5c8e-4f6b-a44b-bd25c4b20b4e:0
+
+Итог по требованиям N 64: 5 разделов выполнены, 1 выполнен частично, 2 не реализованы.

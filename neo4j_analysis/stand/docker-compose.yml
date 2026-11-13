@@ -1,0 +1,69 @@
+services:
+  neo4j:
+    image: neo4j:5.26-enterprise
+    container_name: neo4j-lab3
+    restart: "no"
+    stop_grace_period: 60s
+    ports:
+      - "127.0.0.1:7473:7473"
+      - "127.0.0.1:7687:7687"
+    environment:
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "eval"
+      NEO4J_AUTH: "neo4j/LabAdmin2026!"
+      NEO4J_server_memory_heap_initial__size: 1g
+      NEO4J_server_memory_heap_max__size: 1g
+      NEO4J_server_memory_pagecache_size: 256m
+      NEO4J_dbms_usage__report_enabled: "false"
+      # Раздел 8 N 64: обязательная аутентификация, парольная политика и блокировка входа.
+      NEO4J_dbms_security_auth__enabled: "true"
+      NEO4J_dbms_security_auth__minimum__password__length: "10"
+      NEO4J_dbms_security_auth__max__failed__attempts: "3"
+      NEO4J_dbms_security_auth__lock__time: "15s"
+      NEO4J_browser_credential__timeout: "2m"
+      NEO4J_browser_retain__connection__credentials: "false"
+      # Раздел 10 N 64: журналы запросов и событий безопасности, маскирование данных в журналах.
+      NEO4J_dbms_security_log__successful__authentication: "true"
+      NEO4J_db_logs_query_enabled: "VERBOSE"
+      NEO4J_db_logs_query_obfuscate__literals: "true"
+      NEO4J_db_logs_query_parameter__logging__enabled: "false"
+      # Раздел 14 N 64: ограничения памяти и времени транзакции для проверки устойчивости.
+      NEO4J_db_memory_transaction_max: "64m"
+      NEO4J_db_transaction_timeout: "60s"
+      # Раздел 15 N 64: загрузка процедур только из белого списка и запрет обхода проверок.
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_allowlist: "apoc.text.*,apoc.coll.*"
+      NEO4J_dbms_security_procedures_unrestricted: "lab.none"
+      NEO4J_internal_dbms_cypher__ip__blocklist: "10.0.0.0/8,192.168.0.0/16"
+      # Защищённые соединения: HTTP отключён, HTTPS и Bolt разрешены только через TLS.
+      NEO4J_server_http_enabled: "false"
+      NEO4J_server_https_enabled: "true"
+      NEO4J_server_bolt_tls__level: "REQUIRED"
+      NEO4J_dbms_ssl_policy_bolt_enabled: "true"
+      NEO4J_dbms_ssl_policy_bolt_base__directory: /certificates/bolt
+      NEO4J_dbms_ssl_policy_bolt_private__key: private.key
+      NEO4J_dbms_ssl_policy_bolt_public__certificate: public.crt
+      NEO4J_dbms_ssl_policy_bolt_client__auth: NONE
+      NEO4J_dbms_ssl_policy_https_enabled: "true"
+      NEO4J_dbms_ssl_policy_https_base__directory: /certificates/https
+      NEO4J_dbms_ssl_policy_https_private__key: private.key
+      NEO4J_dbms_ssl_policy_https_public__certificate: public.crt
+      NEO4J_dbms_ssl_policy_https_client__auth: NONE
+      # Раздел 11 N 64: онлайн-резервное копирование и восстановление атрибутов безопасности.
+      NEO4J_server_backup_enabled: "true"
+      NEO4J_server_backup_listen__address: "127.0.0.1:6362"
+    volumes:
+      - lab3_data:/data
+      - lab3_logs:/logs
+      - ./certificates:/certificates:ro
+      - ./backups:/backups
+      - ./config/server-logs.xml:/var/lib/neo4j/conf/server-logs.xml
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-check-certificate -q -O /dev/null https://localhost:7473 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 36
+      start_period: 20s
+
+volumes:
+  lab3_data:
+  lab3_logs:

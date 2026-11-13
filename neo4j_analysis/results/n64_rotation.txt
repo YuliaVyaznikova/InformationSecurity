@@ -1,0 +1,2 @@
+-rw-r--r-- 1 neo4j neo4j 32K Nov 11 11:03 /logs/security.log
+-rw-r--r-- 1 neo4j neo4j 65K Nov 11 11:03 /logs/security.log.01

@@ -1,0 +1,24 @@
+--- Trusted HTTPS certificate ---
+HTTPS status=200
+exit=0
+--- Plain HTTP (disabled) ---
+curl: (7) Failed to connect to localhost port 7474 after 2243 ms: Could not connect to server
+HTTP status=000
+exit=7
+--- Plain Bolt (TLS required) ---
+Connection to the database terminated. Please ensure that your database is listening on the correct host and port and that you have compatible encryption settings both on Neo4j server and driver. Note that the default encryption setting has changed in Neo4j 4.0.
+exit=1
+--- TLS certificate on Bolt port ---
+Connecting to 127.0.0.1
+depth=0 CN=localhost, O=Neo4jSecurityLab
+verify error:num=18:self-signed certificate
+CONNECTION ESTABLISHED
+Protocol version: TLSv1.3
+Ciphersuite: TLS_AES_128_GCM_SHA256
+Peer certificate: CN=localhost, O=Neo4jSecurityLab
+Hash used: SHA256
+Signature type: rsa_pss_rsae_sha256
+Verification error: self-signed certificate
+Peer Temp Key: X25519, 253 bits
+DONE
+exit=0

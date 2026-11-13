@@ -1,0 +1,4 @@
+ok
+"Защита"
+There is no procedure with the name `apoc.load.json` registered for this database instance. Please ensure you've spelled the procedure name correctly and that the procedure is properly deployed.
+Executing admin procedure 'dbms.setConfigValue' permission has not been granted for user 'analyst' with roles [PUBLIC, analysts] overridden by READ restricted to ACCESS.

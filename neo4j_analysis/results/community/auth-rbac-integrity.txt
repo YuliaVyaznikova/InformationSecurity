@@ -1,0 +1,9 @@
+--- Authentication required ---
+The client is unauthorized due to authentication failure.
+exit=1
+--- Enterprise custom role command in Community ---
+Unsupported administration command: CREATE ROLE supportReadOnly IF NOT EXISTS
+exit=1
+--- Uniqueness constraint ---
+Node(0) already exists with label `Person` and property `id` = 'P-001'
+exit=1
