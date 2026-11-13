@@ -51,7 +51,7 @@ def sessions():
                     if r["username"] == "analyst"]
         print(f"{ts()} открыто независимых подключений analyst: {len(drivers)}")
         print(f"{ts()} сервер видит соединений пользователя analyst: {len(rows)}")
-        print("Ограничения числа параллельных сеансов на пользователя в Neo4j нет (FTA_MCS.1 не реализован).")
+        print("Раздел 14 N 64: ограничение числа параллельных сеансов на пользователя в Neo4j не реализовано.")
     finally:
         for d in drivers:
             d.close()

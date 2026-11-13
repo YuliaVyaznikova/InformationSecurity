@@ -32,61 +32,15 @@ LINES = []
 STATS = {"ВЫПОЛНЕНО": 0, "НЕТ": 0, "ОШИБКА": 0}
 
 
-def n64_group(component):
-    if component.startswith("FIA"):
-        return "Раздел 8 N 64:"
-    if component.startswith("FAU"):
-        return "Раздел 10 N 64:"
-    if component.startswith("FMT_MSA"):
-        return "Раздел 8 N 64:"
-    if component.startswith("FMT_MOF"):
-        return "Раздел 10 N 64:"
-    if component.startswith("FMT"):
-        return "Раздел 7 N 64:"
-    if component.startswith(("FDP_ACC", "FDP_ACF")):
-        return "Раздел 7 N 64:"
-    if component.startswith(("FDP_IFC", "FDP_IFF", "FDP_RSI", "FDP_RSP")):
-        return "Раздел 15 N 64:"
-    if component.startswith(("FDP_CRC", "FDP_ETC")):
-        return "Раздел 11 N 64:"
-    if component.startswith("FDP_DDM"):
-        return "Раздел 13 N 64:"
-    if component.startswith("FPT_APW"):
-        return "Раздел 8 N 64:"
-    if component.startswith("FPT_MTR"):
-        return "Раздел 7 N 64:"
-    if component.startswith(("FPT_ACF", "FPT_STM")):
-        return "Раздел 10 N 64:"
-    if component.startswith(("FPO", "FPT_BOP", "FTA")):
-        return "Раздел 14 N 64:"
-    return "N 64:"
-
-
-def n64_heading(text):
-    replacements = {
-        "== FIA: идентификация и аутентификация ==": "== Раздел 8 N 64: идентификация и аутентификация ==",
-        "== FDP_ACC/ACF, FMT: управление доступом и роли ==": "== Раздел 7 N 64: управление доступом и роли ==",
-        "== FDP_IFC/IFF, FDP_RSI/RSP: сетевые потоки и программная среда ==": "== Раздел 15 N 64: сетевые ограничения и программная среда ==",
-        "== FAU: аудит ==": "== Раздел 10 N 64: регистрация событий безопасности ==",
-        "== FPT_APW_EXT: защита хранимой аутентификационной информации ==": "== Раздел 8 N 64: защита хранимой аутентификационной информации ==",
-        "== FPO, FPT_BOP, FTA: транзакции, ресурсы, сеансы ==": "== Раздел 14 N 64: транзакции, ресурсы и сеансы ==",
-        "== FDP_CRC_EXT, FDP_ETC.2, FDP_DDM_EXT: резервирование, экспорт, стирание ==": "== Разделы 11 и 13 N 64: резервное копирование, восстановление и очистка памяти ==",
-    }
-    for old, new in replacements.items():
-        text = text.replace(old, new)
-    return text
-
-
 def log(text=""):
-    print(n64_heading(text))
+    print(text)
     LINES.append(text)
 
 
-def report(component, title, ok, details, gap=False):
-    component = n64_group(component)
+def report(section, title, ok, details, gap=False):
     status = "НЕТ" if gap and ok else ("ВЫПОЛНЕНО" if ok else "ОШИБКА")
     STATS[status] += 1
-    log(f"[{status:9}] {component:16} {title}")
+    log(f"[{status:9}] {section:16} {title}")
     for d in details if isinstance(details, list) else [details]:
         log(f"{'':29}{d}")
 
@@ -161,22 +115,22 @@ def cleanup():
 
 
 def check_identification():
-    log("\n== FIA: идентификация и аутентификация ==")
+    log("\n== Раздел 8 N 64: идентификация и аутентификация ==")
     code, _ = login("analyst", "")
     st_api, _ = https("/db/neo4j/tx/commit", body={"statements": [{"statement": "RETURN 1"}]})
     st_root, disc = https("/")
-    report("FIA_UID.1/UAU.1", "доступ без аутентификации",
+    report("Раздел 8 N 64:", "доступ без аутентификации",
            code == "Neo.ClientError.Security.Unauthorized" and st_api == 401 and st_root == 200,
            [f"Bolt без пароля: {code}", f"HTTP API без пароля: HTTP {st_api}",
             f"До входа доступна только служебная страница '/': HTTP {st_root}, раскрывает "
             f"версию {disc.get('neo4j_version')} {disc.get('neo4j_edition')}"])
 
     code, msg = login("analyst", "WrongPass2026!")
-    report("FIA_UAU.1", "неверный пароль", code == "Neo.ClientError.Security.Unauthorized", f"{code}: {msg}")
+    report("Раздел 8 N 64:", "неверный пароль", code == "Neo.ClientError.Security.Unauthorized", f"{code}: {msg}")
 
     _, c1, m1 = run("neo4j", "CREATE USER tmp_pw SET PASSWORD '123456789' CHANGE NOT REQUIRED", db="system")
     _, c2, _ = run("neo4j", "CREATE USER tmp_pw SET PASSWORD '1234567890' CHANGE NOT REQUIRED", db="system")
-    report("FIA_SOS.1", "минимальная длина пароля 10 символов", c1 is not None and c2 is None,
+    report("Раздел 8 N 64:", "минимальная длина пароля 10 символов", c1 is not None and c2 is None,
            [f"пароль из 9 символов: {m1}", "пароль из 10 символов: принят (сложность не проверяется)"])
 
     admin("CREATE USER tmp_lock SET PASSWORD 'TmpLock2026!' CHANGE NOT REQUIRED")
@@ -184,7 +138,7 @@ def check_identification():
     c_locked, m_locked = login("tmp_lock", "TmpLock2026!")
     time.sleep(16)
     c_after, _ = login("tmp_lock", "TmpLock2026!")
-    report("FIA_AFL.1", "блокировка после 3 неудачных попыток на 15 с",
+    report("Раздел 8 N 64:", "блокировка после 3 неудачных попыток на 15 с",
            c_locked is not None and "too many" in m_locked and c_after is None,
            [f"3 неверные попытки: {', '.join(str(f).split('.')[-1] for f in fails)}",
             f"верный пароль сразу: {m_locked}", "верный пароль через 16 с: вход выполнен"])
@@ -197,7 +151,7 @@ def check_identification():
     _, c_chg, _ = run("tmp_new", "ALTER CURRENT USER SET PASSWORD FROM 'TmpNew2026!' TO 'TmpChanged2026!'",
                       db="system", password="TmpNew2026!")
     rows, c_after, _ = run("tmp_new", "MATCH (n) RETURN count(n) AS c", password="TmpChanged2026!")
-    report("FMT_MSA.1", "обязательная смена начального пароля",
+    report("Раздел 8 N 64:", "обязательная смена начального пароля",
            c_before == "Neo.ClientError.Security.CredentialsExpired" and c_same and not c_chg and not c_after,
            [f"до смены пароля: {c_before}", f"тот же пароль повторно: {m_same}",
             f"после смены пароля видно узлов: {rows[0]['c'] if rows else '-'}"])
@@ -207,28 +161,28 @@ def check_identification():
     c_susp, _ = login("tmp_susp", "TmpSusp2026!")
     admin("ALTER USER tmp_susp SET STATUS ACTIVE")
     c_act, _ = login("tmp_susp", "TmpSusp2026!")
-    report("FTA_TSE.1", "отказ в открытии сеанса приостановленной учётной записи",
+    report("Раздел 8 N 64:", "отказ в открытии сеанса приостановленной учётной записи",
            c_susp is not None and c_act is None,
            [f"SUSPENDED: {c_susp}", "ACTIVE: вход выполнен"])
 
     rows = admin("SHOW USERS YIELD user, roles, passwordChangeRequired, suspended WHERE user = 'analyst' "
                  "RETURN user, roles, passwordChangeRequired, suspended")
-    report("FIA_ATD.1", "атрибуты безопасности пользователя", bool(rows), str(rows[0]) if rows else "нет данных")
+    report("Раздел 8 N 64:", "атрибуты безопасности пользователя", bool(rows), str(rows[0]) if rows else "нет данных")
 
     rows, _, _ = run("analyst", "SHOW CURRENT USER YIELD user, roles RETURN user, roles", db="system")
-    report("FIA_USB.1", "связь пользователь-субъект", rows and rows[0]["user"] == "analyst",
+    report("Раздел 8 N 64:", "связь пользователь-субъект", rows and rows[0]["user"] == "analyst",
            f"SHOW CURRENT USER: {rows[0] if rows else '-'}")
 
 
 def check_access_control():
-    log("\n== FDP_ACC/ACF, FMT: управление доступом и роли ==")
+    log("\n== Раздел 7 N 64: управление доступом и роли ==")
     q_people = "MATCH (p:Person) RETURN collect(p.passport) AS passports, count(p) AS people"
     q_acc = "MATCH (a:Account) RETURN count(a) AS accounts"
     adm_p = run("neo4j", q_people)[0][0]
     an_p = run("analyst", q_people)[0][0]
     adm_a = run("neo4j", q_acc)[0][0]["accounts"]
     an_a = run("analyst", q_acc)[0][0]["accounts"]
-    report("FDP_ACF.1", "analyst: скрыт паспорт и VIP-счёт",
+    report("Раздел 7 N 64:", "analyst: скрыт паспорт и VIP-счёт",
            len([p for p in an_p["passports"] if p]) == 0 and adm_a == 4 and an_a == 3,
            [f"admin видит паспортов: {len(adm_p['passports'])}, analyst: {len([p for p in an_p['passports'] if p])}",
             f"admin видит счетов: {adm_a}, analyst: {an_a} (VIP-счёт A-004 скрыт правилом по значению свойства)"])
@@ -236,7 +190,7 @@ def check_access_control():
     sup_a = run("support", q_acc)[0][0]["accounts"]
     _, c_phone, _ = run("support", "MATCH (p:Person {id: 'P-002'}) SET p.phone = '+7-900-111-22-33'")
     _, c_name, m_name = run("support", "MATCH (p:Person {id: 'P-002'}) SET p.name = 'X'")
-    report("FDP_ACF.1", "support: только клиенты, правка только телефона",
+    report("Раздел 7 N 64:", "support: только клиенты, правка только телефона",
            sup_a == 0 and c_phone is None and c_name == "Neo.ClientError.Security.Forbidden",
            [f"видит счетов: {sup_a}", "SET phone: разрешено", f"SET name: {m_name}"])
 
@@ -244,25 +198,25 @@ def check_access_control():
                                  "CREATE (a)-[:SENT]->(:Transaction {id:'T-CHK-1', amount: 10})-[:RECEIVED_BY]->(b)")
     _, c_bal, m_bal = run("operator", "MATCH (a:Account {id:'A-001'}) SET a.balance = 0")
     _, c_del, m_del = run("operator", "MATCH (t:Transaction {id:'T-CHK-1'}) DETACH DELETE t")
-    report("FDP_ACF.1", "operator: создать перевод можно, менять баланс и удалять нельзя",
+    report("Раздел 7 N 64:", "operator: создать перевод можно, менять баланс и удалять нельзя",
            c_cr is None and c_bal and c_del, ["CREATE Transaction: разрешено", f"SET balance: {m_bal}",
                                               f"DELETE: {m_del}"])
 
     admin("CREATE USER tmp_public SET PASSWORD 'TmpPublic2026!' CHANGE NOT REQUIRED")
     rows, _, _ = run("tmp_public", "MATCH (n) RETURN count(n) AS c", password="TmpPublic2026!")
-    report("FDP_ACC.1", "по умолчанию данных не видно (только роль PUBLIC)", rows and rows[0]["c"] == 0,
+    report("Раздел 7 N 64:", "по умолчанию данных не видно (только роль PUBLIC)", rows and rows[0]["c"] == 0,
            f"новый пользователь без ролей видит узлов: {rows[0]['c'] if rows else '-'}")
 
     _, c_acc, m_acc = run("auditor", "MATCH (n) RETURN count(n)")
     users, c_su, _ = run("auditor", "SHOW USERS", db="system")
     _, c_cu, _ = run("auditor", "CREATE USER tmp_x SET PASSWORD 'TmpX20261234!'", db="system")
-    report("FMT_SMR.1", "auditor: видит учётные записи, не видит данные, не меняет",
+    report("Раздел 7 N 64:", "auditor: видит учётные записи, не видит данные, не меняет",
            c_acc and not c_su and c_cu, [f"MATCH в neo4j: {m_acc}", f"SHOW USERS: {len(users)} записей",
                                          "CREATE USER: запрещено"])
 
     _, c_mk, _ = run("usermgr", "CREATE USER tmp_by_mgr SET PASSWORD 'TmpByMgr2026!'", db="system")
     _, c_gr, m_gr = run("usermgr", "GRANT ROLE admin TO usermgr", db="system")
-    report("FMT_MTD.1", "usermgr: создаёт учётные записи, но не раздаёт роли",
+    report("Раздел 7 N 64:", "usermgr: создаёт учётные записи, но не раздаёт роли",
            c_mk is None and c_gr == "Neo.ClientError.Security.Forbidden",
            ["CREATE USER: разрешено", f"GRANT ROLE admin TO usermgr: {m_gr[:70]}"])
 
@@ -272,16 +226,16 @@ def check_access_control():
     res = body.get("results", [])
     passport = res[0]["data"][0]["row"][0] if res else "?"
     count = res[1]["data"][0]["row"][0] if len(res) > 1 else "?"
-    report("FPT_MTR_EXT.1", "те же правила через другой интерфейс (HTTPS API)",
+    report("Раздел 7 N 64:", "те же правила через другой интерфейс (HTTPS API)",
            st == 200 and passport is None and count == 3,
            f"HTTP {st}: passport = {passport}, счетов = {count}")
 
 
 def check_network_and_software():
-    log("\n== FDP_IFC/IFF, FDP_RSI/RSP: сетевые потоки и программная среда ==")
+    log("\n== Раздел 15 N 64: сетевые ограничения и программная среда ==")
     _, c1, m1 = run("operator", "LOAD CSV FROM 'http://10.0.0.1/x.csv' AS r RETURN r LIMIT 1")
     _, c2, m2 = run("analyst", "LOAD CSV FROM 'http://127.0.0.1:1/x.csv' AS r RETURN r LIMIT 1")
-    report("FDP_IFF.1", "фильтрация исходящих запросов по адресу",
+    report("Раздел 15 N 64:", "фильтрация исходящих запросов по адресу",
            "blocklist" in m1 and c2 == "Neo.ClientError.Security.Forbidden",
            [f"operator -> 10.0.0.1: {m1[-90:]}", f"analyst -> любой адрес: {m2[:80]}"])
 
@@ -297,20 +251,20 @@ def check_network_and_software():
         http_plain = "открыт"
     except Exception as e:
         http_plain = type(e).__name__
-    report("FDP_IFC.2", "только защищённые каналы", plain != "подключение установлено" and http_plain != "открыт",
+    report("Раздел 15 N 64:", "только защищённые каналы", plain != "подключение установлено" and http_plain != "открыт",
            [f"Bolt без TLS: {plain}", f"HTTP 7474: {http_plain}"])
 
     rows, _, _ = run("neo4j", "RETURN apoc.text.capitalize('защита') AS v")
     _, c_load, m_load = run("neo4j", "CALL apoc.load.json('http://127.0.0.1/x.json')")
     _, c_cfg, m_cfg = run("analyst", "CALL dbms.setConfigValue('db.logs.query.enabled', 'OFF')", db="system")
-    report("FDP_RSP_EXT.1", "белый список процедур и запрет админ-процедур",
+    report("Раздел 15 N 64:", "белый список процедур и запрет админ-процедур",
            rows and c_load == "Neo.ClientError.Procedure.ProcedureNotFound" and c_cfg,
            [f"apoc.text.capitalize: {rows[0]['v'] if rows else '-'}", f"apoc.load.json: {m_load[:75]}",
             f"analyst вызывает dbms.setConfigValue: {m_cfg[:75]}"])
 
 
 def check_audit():
-    log("\n== FAU: аудит ==")
+    log("\n== Раздел 10 N 64: регистрация событий безопасности ==")
     sec = sh("cat /logs/security.log")
     needles = {
         "успешный вход": "logged in",
@@ -322,12 +276,12 @@ def check_audit():
         "отказ в доступе": "is not allowed for user 'support'",
     }
     found = {k: (v in sec) for k, v in needles.items()}
-    report("FAU_GEN.1", "события в security.log", all(found.values()),
+    report("Раздел 10 N 64:", "события в security.log", all(found.values()),
            [f"{k}: {'есть' if v else 'НЕТ'}" for k, v in found.items()])
 
     users_in_sel = set(re.findall(r"\t\S+ - (\S+) - ", sh("cat /logs/analyst-audit.log")))
     users_in_q = set(re.findall(r"\t\S+ - (\S+) - ", sh("cat /logs/query.log")))
-    report("FAU_SEL.1", "избирательный журнал по пользователю", users_in_sel == {"analyst"} and len(users_in_q) > 2,
+    report("Раздел 10 N 64:", "избирательный журнал по пользователю", users_in_sel == {"analyst"} and len(users_in_q) > 2,
            [f"query.log: пользователи {sorted(users_in_q)}", f"analyst-audit.log: {sorted(users_in_sel)}"])
 
     admin("CALL dbms.setConfigValue('db.logs.query.enabled', 'OFF')")
@@ -337,7 +291,7 @@ def check_audit():
     time.sleep(1)
     q = sh("cat /logs/query.log")
     dbg = sh("grep 'db.logs.query.enabled changed' /logs/debug.log | tail -2")
-    report("FMT_MOF.1", "администратор отключает и включает журнал запросов",
+    report("Раздел 10 N 64:", "администратор отключает и включает журнал запросов",
            "probe_while_on" in q and "probe_while_off" not in q and "changed to OFF" in dbg,
            [f"запрос при выключенном журнале записан: {'да' if 'probe_while_off' in q else 'нет'}",
             f"запрос после включения записан: {'да' if 'probe_while_on' in q else 'нет'}"]
@@ -345,29 +299,29 @@ def check_audit():
 
     _, c_read, m_read = run("analyst", "LOAD CSV FROM 'file:///../logs/security.log' AS r RETURN r LIMIT 1")
     perms = sh("ls -l /logs | grep -E 'security.log|query.log' | head -2")
-    report("FPT_ACF_EXT.1", "пользователь СУБД не читает журналы аудита", c_read is not None,
+    report("Раздел 10 N 64:", "пользователь СУБД не читает журналы аудита", c_read is not None,
            [f"LOAD CSV security.log от analyst: {m_read[:80]}"] + [p.strip() for p in perms.splitlines()])
 
     stamp = re.findall(r"^(\S+ \S+) ", sec, re.M)[-1]
     rows = admin("RETURN toString(datetime()) AS now", db="neo4j")
-    report("FPT_STM.1", "метки времени в журналах", bool(stamp),
+    report("Раздел 10 N 64:", "метки времени в журналах", bool(stamp),
            [f"последняя запись security.log: {stamp}", f"datetime() сервера: {rows[0]['now']}"])
 
 
 def check_passwords_storage():
-    log("\n== FPT_APW_EXT: защита хранимой аутентификационной информации ==")
+    log("\n== Раздел 8 N 64: защита хранимой аутентификационной информации ==")
     rows = admin("SHOW USERS WITH AUTH YIELD user, auth WHERE user = 'analyst' RETURN user, auth")
     plain = sh("grep -rl 'Analyst2026' /data /logs 2>/dev/null | wc -l").strip()
     hashes = sh("grep -raoh 'SHA-256,[0-9a-f]\\{8\\}' /data/databases/system /data/transactions/system "
                 "2>/dev/null | head -1").strip()
-    report("FPT_APW_EXT.1", "пароли не хранятся и не показываются в открытом виде",
+    report("Раздел 8 N 64:", "пароли не хранятся и не показываются в открытом виде",
            rows and rows[0]["auth"].get("password") == "***" and plain == "0" and hashes.startswith("SHA-256"),
            [f"SHOW USERS WITH AUTH: {rows[0]['auth'] if rows else '-'}",
             f"файлов с паролем analyst в открытом виде: {plain}", f"формат хранения: {hashes}..."])
 
 
 def check_transactions():
-    log("\n== FPO, FPT_BOP, FTA: транзакции, ресурсы, сеансы ==")
+    log("\n== Раздел 14 N 64: транзакции, ресурсы и сеансы ==")
     with GraphDatabase.driver(URI, auth=("neo4j", PW["neo4j"])) as drv:
         s1 = drv.session()
         tx = s1.begin_transaction()
@@ -378,7 +332,7 @@ def check_transactions():
         s1.close()
         with drv.session() as s2:
             after = s2.run("MATCH (n:IsolationProbe) RETURN count(n) AS c").single()["c"]
-    report("FPO_DFS_EXT.1", "изоляция транзакций", before == 0 and after == 1,
+    report("Раздел 14 N 64:", "изоляция транзакций", before == 0 and after == 1,
            f"чужая незафиксированная запись видна: {before}; после COMMIT: {after}")
 
     locked = threading.Event()
@@ -399,7 +353,7 @@ def check_transactions():
             waited["s"] = time.monotonic() - start
         a, b = threading.Thread(target=t1), threading.Thread(target=t2)
         a.start(); b.start(); a.join(); b.join()
-    report("FPO_OBF_EXT.1", "вторая запись ждёт освобождения блокировки", waited.get("s", 0) > 2.5,
+    report("Раздел 14 N 64:", "вторая запись ждёт освобождения блокировки", waited.get("s", 0) > 2.5,
            f"ожидание второй транзакции: {waited.get('s', 0):.2f} с")
 
     barrier = threading.Barrier(2)
@@ -420,11 +374,11 @@ def check_transactions():
         a = threading.Thread(target=w, args=("A-001", "A-002"))
         b = threading.Thread(target=w, args=("A-002", "A-001"))
         a.start(); b.start(); a.join(); b.join()
-    report("FPO_OBF_EXT.1", "обнаружение взаимоблокировки",
+    report("Раздел 14 N 64:", "обнаружение взаимоблокировки",
            "COMMIT" in outcome and "Neo.TransientError.Transaction.DeadlockDetected" in outcome, ", ".join(outcome))
 
     _, c_mem, m_mem = run("analyst", "UNWIND range(1, 20000000) AS x RETURN size(collect(x)) AS n")
-    report("FPT_BOP_EXT.1", "лимит памяти транзакции 64 МБ", c_mem == "Neo.TransientError.General.MemoryPoolOutOfMemoryError",
+    report("Раздел 14 N 64:", "лимит памяти транзакции 64 МБ", c_mem == "Neo.TransientError.General.MemoryPoolOutOfMemoryError",
            m_mem[:120])
 
     ready = threading.Event()
@@ -450,7 +404,7 @@ def check_transactions():
         for r in rows:
             admin("TERMINATE TRANSACTIONS $id", db="neo4j", id=r["transactionId"])
         t.join(30)
-    report("FTA_SSL / FMT", "администратор видит и прерывает чужой запрос",
+    report("Раздел 14 N 64:", "администратор видит и прерывает чужой запрос",
            bool(rows) and killed.get("code") == "Neo.ClientError.Transaction.Terminated",
            f"SHOW TRANSACTIONS: {[r['transactionId'] for r in rows]}; у analyst: {killed.get('code')}")
 
@@ -465,18 +419,18 @@ def check_transactions():
     finally:
         for d in drivers:
             d.close()
-    report("FTA_MCS.1", "ограничение числа параллельных сеансов", len(conns) >= 10,
+    report("Раздел 14 N 64:", "ограничение числа параллельных сеансов", len(conns) >= 10,
            f"одновременно открыто соединений analyst: {len(conns)}, ограничения нет", gap=True)
 
     rows = admin("SHOW SETTINGS YIELD name, value WHERE name IN "
                  "['browser.credential_timeout', 'browser.retain_connection_credentials'] RETURN name, value")
-    report("FTA_SSL.1", "таймаут бездействия сеанса Neo4j Browser",
+    report("Раздел 14 N 64:", "таймаут бездействия сеанса Neo4j Browser",
            {r["name"]: r["value"] for r in rows}.get("browser.credential_timeout") == "2m",
            [f"{r['name']} = {r['value']}" for r in rows] + ["сам таймаут проверяется в Browser вручную (отчёт, рисунок 8)"])
 
 
 def check_backup_and_erase():
-    log("\n== FDP_CRC_EXT, FDP_ETC.2, FDP_DDM_EXT: резервирование, экспорт, стирание ==")
+    log("\n== Разделы 11 и 13 N 64: резервное копирование, восстановление и очистка памяти ==")
     out = sh("neo4j-admin database backup --type=FULL --from=localhost:6362 --to-path=/backups neo4j 2>&1 | tail -1", user="neo4j")
     name = sh("ls -t /backups | grep '^neo4j-' | head -1").strip()
     sh(f"neo4j-admin database restore --from-path=/backups/{name} bankcopy 2>&1 | tail -1", user="neo4j")
@@ -486,10 +440,10 @@ def check_backup_and_erase():
     sh("cypher-shell -a bolt+ssc://localhost:7687 -u neo4j -p 'LabAdmin2026!' -d system "
        "--param \"database => 'bankcopy'\" -f /data/scripts/bankcopy/restore_metadata.cypher", user="neo4j")
     rows, c_after, _ = run("analyst", "MATCH (a:Account) RETURN count(a) AS c", db="bankcopy")
-    report("FDP_CRC_EXT.1", "онлайн-копия и восстановление в отдельную базу",
+    report("Раздел 11 N 64:", "онлайн-копия и восстановление в отдельную базу",
            "completed" in out and copy == 4, [f"backup: {out.strip()} -> {name}",
                                               f"в восстановленной копии bankcopy счетов: {copy}"])
-    report("FDP_ETC.2", "атрибуты безопасности переносятся вместе с копией",
+    report("Раздел 11 N 64:", "атрибуты безопасности переносятся вместе с копией",
            c_before == "Neo.ClientError.Security.Forbidden" and not c_after and rows[0]["c"] == 3,
            ["analyst в bankcopy до restore_metadata.cypher: доступ запрещён",
             f"после restore_metadata.cypher: видит {rows[0]['c'] if rows else '-'} счёта (VIP снова скрыт)"])
@@ -500,19 +454,19 @@ def check_backup_and_erase():
     admin("MATCH (s:Secret) DELETE s", db="neo4j")
     admin("CALL db.checkpoint()", db="neo4j")
     files = sh("grep -rl 'vault code is forty-two' /data 2>/dev/null").split()
-    report("FDP_DDM_EXT.1", "гарантированное стирание удалённых данных", len(files) > 0,
+    report("Раздел 13 N 64:", "гарантированное стирание удалённых данных", len(files) > 0,
            ["удалённое значение после DELETE и checkpoint найдено в файлах:"] + files, gap=True)
 
     _, c_dup, m_dup = run("neo4j", "CREATE (:Person {id: 'P-001'})")
     rows = admin("MATCH (p:Person {id:'P-001'}) RETURN elementId(p) AS eid", db="neo4j")
-    report("FIA_OID_EXT.1", "однозначная идентификация объектов",
+    report("Раздел 8 N 64:", "однозначная идентификация объектов",
            c_dup == "Neo.ClientError.Schema.ConstraintValidationFailed" and rows,
            [f"дубликат P-001: {m_dup[:80]}", f"elementId: {rows[0]['eid'] if rows else '-'}"])
 
 
 if __name__ == "__main__":
     started = dt.datetime.now()
-    log(f"Самопроверка стенда Neo4j, {started:%d.%m.%Y %H:%M:%S}")
+    log(f"Проверка стенда Neo4j по требованиям ФСТЭК России N 64, {started:%d.%m.%Y %H:%M:%S}")
     ver = admin("CALL dbms.components() YIELD versions, edition RETURN versions[0] AS v, edition AS e")[0]
     log(f"Neo4j {ver['v']} {ver['e']}")
     cleanup()
